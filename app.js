@@ -44,16 +44,13 @@ class ResearchProgressSystem {
     }
 
     initializeMembers() {
-        // 8个团队成员
+        // 6个团队成员
         const membersData = [
-            { name: '张三', research: '机器学习与数据挖掘', status: 'active' },
-            { name: '李四', research: '自然语言处理', status: 'active' },
-            { name: '王五', research: '计算机视觉', status: 'warning' },
-            { name: '赵六', research: '人工智能理论', status: 'active' },
-            { name: '刘七', research: '知识图谱与推理', status: 'active' },
-            { name: '陈八', research: '智能系统', status: 'danger' },
-            { name: '杨九', research: '人机交互', status: 'active' },
-            { name: '吴十', research: '强化学习', status: 'active' }
+            { name: '黄启豪', research: '计算机视觉', status: 'active' },
+            { name: '丘文安', research: '计算机视觉', status: 'active' },
+            { name: '陈浩南', research: '计算机视觉', status: 'warning' },
+            { name: '李崇标', research: '计算机视觉', status: 'active' },
+            { name: '马蕴哲', research: '计算机视觉', status: 'active' },
         ];
 
         this.members = membersData.map((member, index) => {
@@ -946,3 +943,4 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
     document.head.appendChild(style);
 });
+
