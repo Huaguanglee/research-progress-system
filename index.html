@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>科研团队进展管理系统</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/theme.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- 顶部导航 -->
+    <nav class="academic-navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-graduation-cap"></i>
+                <span>学术科研进展管理系统</span>
+            </div>
+            <div class="nav-links">
+                <a href="#" class="nav-link active" data-page="dashboard">
+                    <i class="fas fa-tachometer-alt"></i> 总览
+                </a>
+                <a href="#" class="nav-link" data-page="progress">
+                    <i class="fas fa-tasks"></i> 进展跟踪
+                </a>
+                <a href="#" class="nav-link" data-page="files">
+                    <i class="fas fa-folder-open"></i> 文件管理
+                </a>
+                <a href="#" class="nav-link" data-page="calendar">
+                    <i class="fas fa-calendar-alt"></i> 时间表
+                </a>
+            </div>
+            <div class="user-profile">
+                <img src="https://ui-avatars.com/api/?name=导师&background=2c3e50&color=fff" alt="导师">
+                <span>导师视图</span>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container">
+        <!-- 页面标题 -->
+        <header class="page-header">
+            <h1><i class="fas fa-chart-line"></i> 科研团队进展总览</h1>
+            <p class="subtitle">"不要假装努力，结果不会陪你演戏" - 学术严谨，规划先行</p>
+        </header>
+
+        <!-- 团队成员分区 -->
+        <section class="team-section">
+            <div class="section-header">
+                <h2><i class="fas fa-users"></i> 团队成员进展 (8人)</h2>
+                <div class="date-info">2025-2026 学年</div>
+            </div>
+            
+            <div class="team-grid" id="teamGrid">
+                <!-- 团队成员卡片将在此动态生成 -->
+            </div>
+        </section>
+
+        <!-- 月度进展编辑区 -->
+        <section class="progress-editor-section">
+            <div class="section-header">
+                <h2><i class="fas fa-edit"></i> 月度进展编辑</h2>
+                <button class="btn btn-primary" id="exportAll">
+                    <i class="fas fa-download"></i> 导出所有进展
+                </button>
+            </div>
+            
+            <div class="editor-container">
+                <div class="member-selector">
+                    <label for="memberSelect">选择成员：</label>
+                    <select id="memberSelect" class="form-select">
+                        <option value="">请选择团队成员</option>
+                    </select>
+                </div>
+                
+                <div class="month-selector">
+                    <label>选择月份：</label>
+                    <div class="month-buttons" id="monthButtons">
+                        <!-- 月份按钮将在此动态生成 -->
+                    </div>
+                </div>
+                
+                <!-- 富文本编辑器 -->
+                <div class="editor-wrapper">
+                    <div class="editor-toolbar">
+                        <button type="button" class="tool-btn" data-command="bold" title="粗体">
+                            <i class="fas fa-bold"></i>
+                        </button>
+                        <button type="button" class="tool-btn" data-command="italic" title="斜体">
+                            <i class="fas fa-italic"></i>
+                        </button>
+                        <button type="button" class="tool-btn" data-command="insertUnorderedList" title="列表">
+                            <i class="fas fa-list-ul"></i>
+                        </button>
+                        <button type="button" class="tool-btn" data-command="createLink" title="链接">
+                            <i class="fas fa-link"></i>
+                        </button>
+                        <button type="button" class="tool-btn" data-command="insertImage" title="插入图片">
+                            <i class="fas fa-image"></i>
+                        </button>
+                    </div>
+                    <div 
+                        class="editor-content" 
+                        id="progressEditor" 
+                        contenteditable="true"
+                        data-placeholder="请在此编辑本月进展内容... 包括：实验进展、数据分析、论文撰写、问题与解决方案、下月计划等"
+                    ></div>
+                </div>
+                
+                <!-- 文件上传区域 -->
+                <div class="file-upload-section">
+                    <h4><i class="fas fa-paperclip"></i> 相关文件上传</h4>
+                    <div class="upload-area" id="uploadArea">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>拖放文件到此区域，或 <span class="browse-link" id="browseFiles">浏览文件</span></p>
+                        <input type="file" id="fileInput" multiple style="display: none;">
+                        <p class="upload-hint">支持 PDF, DOC, PPT, 图片, 数据文件 (最大 50MB)</p>
+                    </div>
+                    <div class="uploaded-files" id="uploadedFiles">
+                        <!-- 已上传文件列表 -->
+                    </div>
+                </div>
+                
+                <div class="editor-actions">
+                    <button class="btn btn-save" id="saveProgress">
+                        <i class="fas fa-save"></i> 保存进展
+                    </button>
+                    <button class="btn btn-submit" id="submitProgress">
+                        <i class="fas fa-paper-plane"></i> 提交给导师
+                    </button>
+                    <button class="btn btn-outline" id="clearEditor">
+                        <i class="fas fa-eraser"></i> 清空
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 时间轴视图 -->
+        <section class="timeline-section">
+            <h3><i class="fas fa-history"></i> 进展时间轴</h3>
+            <div class="timeline" id="progressTimeline">
+                <!-- 进展记录将在此显示 -->
+            </div>
+        </section>
+    </main>
+
+    <!-- 模态框 - 成员详情 -->
+    <div class="modal" id="memberModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalMemberName"></h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="member-stats">
+                    <div class="stat-card">
+                        <div class="stat-value" id="statCompleted">0</div>
+                        <div class="stat-label">已完成任务</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="statSubmitted">0</div>
+                        <div class="stat-label">已提交文件</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="statLastActive">-</div>
+                        <div class="stat-label">最后活跃</div>
+                    </div>
+                </div>
+                <div class="progress-details" id="modalProgressDetails">
+                    <!-- 详细进展将在此显示 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="academic-footer">
+        <div class="footer-content">
+            <p>© 2025-2026 学术科研进展管理系统 | 严谨 务实 创新 共享</p>
+            <p class="footer-quote">"科研不是一场短跑，而是一场需要精确导航的马拉松"</p>
+        </div>
+    </footer>
+
+    <!-- 脚本引入 -->
+    <script src="js/app.js"></script>
+    <script src="js/file-manager.js"></script>
+    <script src="js/editor.js"></script>
+</body>
+</html>
