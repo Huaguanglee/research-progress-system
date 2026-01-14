@@ -3,188 +3,295 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>科研团队进展管理系统</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/theme.css">
+    <title>学术科研进展管理系统</title>
+    <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastify-js/1.12.0/toastify.min.css">
+    <style>
+        /* 添加一些内联样式确保页面加载时有基本样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Roboto', 'Noto Serif SC', sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 1.2rem;
+            color: #666;
+        }
+    </style>
 </head>
 <body>
-    <!-- 顶部导航 -->
-    <nav class="academic-navbar">
+    <!-- 顶部导航栏 -->
+    <nav class="navbar">
         <div class="nav-container">
             <div class="nav-brand">
                 <i class="fas fa-graduation-cap"></i>
                 <span>学术科研进展管理系统</span>
             </div>
-            <div class="nav-links">
-                <a href="#" class="nav-link active" data-page="dashboard">
+            <div class="nav-menu">
+                <a href="#" class="nav-item active" data-page="dashboard">
                     <i class="fas fa-tachometer-alt"></i> 总览
                 </a>
-                <a href="#" class="nav-link" data-page="progress">
-                    <i class="fas fa-tasks"></i> 进展跟踪
+                <a href="#" class="nav-item" data-page="progress">
+                    <i class="fas fa-chart-line"></i> 进展跟踪
                 </a>
-                <a href="#" class="nav-link" data-page="files">
+                <a href="#" class="nav-item" data-page="files">
                     <i class="fas fa-folder-open"></i> 文件管理
                 </a>
-                <a href="#" class="nav-link" data-page="calendar">
+                <a href="#" class="nav-item" data-page="calendar">
                     <i class="fas fa-calendar-alt"></i> 时间表
                 </a>
             </div>
-            <div class="user-profile">
-                <img src="https://ui-avatars.com/api/?name=导师&background=2c3e50&color=fff" alt="导师">
-                <span>导师视图</span>
+            <div class="nav-user">
+                <img src="https://ui-avatars.com/api/?name=导师&background=3498db&color=fff&size=40" alt="导师" class="user-avatar">
+                <span class="user-name">导师视图</span>
             </div>
         </div>
     </nav>
 
-    <main class="container">
-        <!-- 页面标题 -->
-        <header class="page-header">
-            <h1><i class="fas fa-chart-line"></i> 科研团队进展总览</h1>
-            <p class="subtitle">"不要假装努力，结果不会陪你演戏" - 学术严谨，规划先行</p>
-        </header>
+    <main>
+        <!-- 仪表板主内容 -->
+        <section class="dashboard" id="dashboardPage">
+            <div class="dashboard-header">
+                <h1><i class="fas fa-microscope"></i> 科研团队进展总览</h1>
+                <p class="subtitle">"不要假装努力，结果不会陪你演戏" - 学术严谨，规划先行</p>
+            </div>
 
-        <!-- 团队成员分区 -->
-        <section class="team-section">
-            <div class="section-header">
-                <h2><i class="fas fa-users"></i> 团队成员进展 (8人)</h2>
-                <div class="date-info">2025-2026 学年</div>
-            </div>
-            
-            <div class="team-grid" id="teamGrid">
-                <!-- 团队成员卡片将在此动态生成 -->
-            </div>
-        </section>
-
-        <!-- 月度进展编辑区 -->
-        <section class="progress-editor-section">
-            <div class="section-header">
-                <h2><i class="fas fa-edit"></i> 月度进展编辑</h2>
-                <button class="btn btn-primary" id="exportAll">
-                    <i class="fas fa-download"></i> 导出所有进展
-                </button>
-            </div>
-            
-            <div class="editor-container">
-                <div class="member-selector">
-                    <label for="memberSelect">选择成员：</label>
-                    <select id="memberSelect" class="form-select">
-                        <option value="">请选择团队成员</option>
-                    </select>
-                </div>
-                
-                <div class="month-selector">
-                    <label>选择月份：</label>
-                    <div class="month-buttons" id="monthButtons">
-                        <!-- 月份按钮将在此动态生成 -->
+            <!-- 统计卡片 -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>团队成员</h3>
+                        <div class="stat-value" id="totalMembers">8</div>
                     </div>
                 </div>
-                
-                <!-- 富文本编辑器 -->
-                <div class="editor-wrapper">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-tasks"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>总完成进度</h3>
+                        <div class="stat-value" id="totalProgress">0%</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-file-upload"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>文件总数</h3>
+                        <div class="stat-value" id="totalFiles">0</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>本月提交</h3>
+                        <div class="stat-value" id="monthSubmissions">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 团队成员网格 -->
+            <div class="section-header">
+                <h2><i class="fas fa-user-friends"></i> 团队成员 (8人)</h2>
+                <div class="section-actions">
+                    <button class="btn btn-secondary" id="refreshBtn">
+                        <i class="fas fa-sync-alt"></i> 刷新
+                    </button>
+                    <button class="btn btn-primary" id="exportBtn">
+                        <i class="fas fa-download"></i> 导出数据
+                    </button>
+                </div>
+            </div>
+
+            <div class="members-grid" id="membersGrid">
+                <!-- 团队成员卡片将通过JavaScript动态生成 -->
+                <div class="loading">加载团队成员信息...</div>
+            </div>
+
+            <!-- 月度进展编辑器 -->
+            <div class="editor-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-edit"></i> 月度进展编辑</h2>
+                </div>
+
+                <div class="editor-container">
+                    <!-- 选择器和工具栏 -->
                     <div class="editor-toolbar">
-                        <button type="button" class="tool-btn" data-command="bold" title="粗体">
-                            <i class="fas fa-bold"></i>
+                        <div class="toolbar-group">
+                            <label for="memberSelect">选择成员：</label>
+                            <select id="memberSelect" class="form-select">
+                                <option value="">请选择团队成员</option>
+                                <!-- 成员选项将通过JavaScript动态添加 -->
+                            </select>
+                        </div>
+                        
+                        <div class="toolbar-group">
+                            <label>选择月份：</label>
+                            <div class="month-buttons" id="monthButtons">
+                                <!-- 月份按钮将通过JavaScript动态生成 -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 富文本编辑器 -->
+                    <div class="editor-wrapper">
+                        <div class="editor-toolbar">
+                            <button type="button" class="tool-btn" data-command="bold" title="粗体">
+                                <i class="fas fa-bold"></i>
+                            </button>
+                            <button type="button" class="tool-btn" data-command="italic" title="斜体">
+                                <i class="fas fa-italic"></i>
+                            </button>
+                            <button type="button" class="tool-btn" data-command="underline" title="下划线">
+                                <i class="fas fa-underline"></i>
+                            </button>
+                            <button type="button" class="tool-btn" data-command="insertUnorderedList" title="无序列表">
+                                <i class="fas fa-list-ul"></i>
+                            </button>
+                            <button type="button" class="tool-btn" data-command="insertOrderedList" title="有序列表">
+                                <i class="fas fa-list-ol"></i>
+                            </button>
+                            <button type="button" class="tool-btn" data-command="createLink" title="链接">
+                                <i class="fas fa-link"></i>
+                            </button>
+                            <button type="button" class="tool-btn" data-command="formatBlock" data-value="<h3>" title="标题">
+                                <i class="fas fa-heading"></i>
+                            </button>
+                        </div>
+                        <div class="editor-content" id="progressEditor" contenteditable="true">
+                            <p>请在此编辑本月科研进展...</p>
+                            <p>包括：实验进展、数据分析、论文撰写、问题与解决方案、下月计划等。</p>
+                        </div>
+                        <div class="editor-footer">
+                            <span id="charCount">0 字</span>
+                            <span class="auto-save-status" id="autoSaveStatus">已保存</span>
+                        </div>
+                    </div>
+
+                    <!-- 文件上传区域 -->
+                    <div class="file-upload-section">
+                        <h4><i class="fas fa-paperclip"></i> 相关文件上传</h4>
+                        <div class="upload-area" id="uploadArea">
+                            <div class="upload-icon">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                            </div>
+                            <p>拖放文件到此区域，或 <span class="upload-link" id="browseFiles">浏览文件</span></p>
+                            <p class="upload-hint">支持 PDF, DOC, PPT, 图片, 数据文件 (最大 50MB)</p>
+                            <input type="file" id="fileInput" multiple style="display: none;">
+                        </div>
+                        <div class="uploaded-files" id="uploadedFiles">
+                            <p class="no-files">暂无文件</p>
+                        </div>
+                    </div>
+
+                    <!-- 操作按钮 -->
+                    <div class="editor-actions">
+                        <button class="btn btn-success" id="saveBtn">
+                            <i class="fas fa-save"></i> 保存草稿
                         </button>
-                        <button type="button" class="tool-btn" data-command="italic" title="斜体">
-                            <i class="fas fa-italic"></i>
+                        <button class="btn btn-primary" id="submitBtn">
+                            <i class="fas fa-paper-plane"></i> 提交给导师
                         </button>
-                        <button type="button" class="tool-btn" data-command="insertUnorderedList" title="列表">
-                            <i class="fas fa-list-ul"></i>
-                        </button>
-                        <button type="button" class="tool-btn" data-command="createLink" title="链接">
-                            <i class="fas fa-link"></i>
-                        </button>
-                        <button type="button" class="tool-btn" data-command="insertImage" title="插入图片">
-                            <i class="fas fa-image"></i>
+                        <button class="btn btn-outline" id="clearBtn">
+                            <i class="fas fa-eraser"></i> 清空
                         </button>
                     </div>
-                    <div 
-                        class="editor-content" 
-                        id="progressEditor" 
-                        contenteditable="true"
-                        data-placeholder="请在此编辑本月进展内容... 包括：实验进展、数据分析、论文撰写、问题与解决方案、下月计划等"
-                    ></div>
                 </div>
-                
-                <!-- 文件上传区域 -->
-                <div class="file-upload-section">
-                    <h4><i class="fas fa-paperclip"></i> 相关文件上传</h4>
-                    <div class="upload-area" id="uploadArea">
-                        <i class="fas fa-cloud-upload-alt"></i>
-                        <p>拖放文件到此区域，或 <span class="browse-link" id="browseFiles">浏览文件</span></p>
-                        <input type="file" id="fileInput" multiple style="display: none;">
-                        <p class="upload-hint">支持 PDF, DOC, PPT, 图片, 数据文件 (最大 50MB)</p>
-                    </div>
-                    <div class="uploaded-files" id="uploadedFiles">
-                        <!-- 已上传文件列表 -->
-                    </div>
+            </div>
+
+            <!-- 最近活动时间轴 -->
+            <div class="timeline-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-history"></i> 最近活动</h2>
                 </div>
-                
-                <div class="editor-actions">
-                    <button class="btn btn-save" id="saveProgress">
-                        <i class="fas fa-save"></i> 保存进展
-                    </button>
-                    <button class="btn btn-submit" id="submitProgress">
-                        <i class="fas fa-paper-plane"></i> 提交给导师
-                    </button>
-                    <button class="btn btn-outline" id="clearEditor">
-                        <i class="fas fa-eraser"></i> 清空
-                    </button>
+                <div class="timeline" id="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-date">刚刚</div>
+                            <div class="timeline-text">系统初始化完成</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
 
-        <!-- 时间轴视图 -->
-        <section class="timeline-section">
-            <h3><i class="fas fa-history"></i> 进展时间轴</h3>
-            <div class="timeline" id="progressTimeline">
-                <!-- 进展记录将在此显示 -->
-            </div>
+        <!-- 其他页面（初始隐藏） -->
+        <section class="page hidden" id="progressPage">
+            <h2>进展跟踪页面开发中...</h2>
+        </section>
+        <section class="page hidden" id="filesPage">
+            <h2>文件管理页面开发中...</h2>
+        </section>
+        <section class="page hidden" id="calendarPage">
+            <h2>时间表页面开发中...</h2>
         </section>
     </main>
 
-    <!-- 模态框 - 成员详情 -->
-    <div class="modal" id="memberModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="modalMemberName"></h3>
-                <button class="modal-close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="member-stats">
-                    <div class="stat-card">
-                        <div class="stat-value" id="statCompleted">0</div>
-                        <div class="stat-label">已完成任务</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="statSubmitted">0</div>
-                        <div class="stat-label">已提交文件</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="statLastActive">-</div>
-                        <div class="stat-label">最后活跃</div>
-                    </div>
-                </div>
-                <div class="progress-details" id="modalProgressDetails">
-                    <!-- 详细进展将在此显示 -->
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 页脚 -->
-    <footer class="academic-footer">
+    <!-- 底部 -->
+    <footer class="footer">
         <div class="footer-content">
             <p>© 2025-2026 学术科研进展管理系统 | 严谨 务实 创新 共享</p>
             <p class="footer-quote">"科研不是一场短跑，而是一场需要精确导航的马拉松"</p>
         </div>
     </footer>
 
-    <!-- 脚本引入 -->
-    <script src="js/app.js"></script>
-    <script src="js/file-manager.js"></script>
-    <script src="js/editor.js"></script>
+    <!-- 成员详情模态框 -->
+    <div class="modal" id="memberModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">成员详情</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-member-info">
+                    <img id="modalAvatar" src="" alt="" class="modal-avatar">
+                    <div>
+                        <h4 id="modalName"></h4>
+                        <p id="modalId"></p>
+                        <p id="modalResearch"></p>
+                    </div>
+                </div>
+                <div class="modal-stats">
+                    <div class="stat-card">
+                        <div class="stat-value" id="modalCompleted">0</div>
+                        <div class="stat-label">已完成月份</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="modalSubmitted">0</div>
+                        <div class="stat-label">已提交</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="modalFiles">0</div>
+                        <div class="stat-label">文件数</div>
+                    </div>
+                </div>
+                <div class="progress-details" id="progressDetails">
+                    <!-- 进展详情将在这里显示 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 脚本 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastify-js/1.12.0/toastify.min.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
