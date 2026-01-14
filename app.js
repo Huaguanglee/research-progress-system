@@ -1,889 +1,948 @@
-// 初始化应用
-document.addEventListener('DOMContentLoaded', function() {
-    initializeApp();
-});
-
-// 应用状态
-let appState = {
-    currentMember: null,
-    currentMonth: null,
-    members: [],
-    months: []
-};
-
-// 初始化应用
-function initializeApp() {
-    // 初始化月份
-    initializeMonths();
-    
-    // 初始化团队成员
-    initializeMembers();
-    
-    // 渲染团队成员网格
-    renderTeamGrid();
-    
-    // 初始化月份选择器
-    initializeMonthSelector();
-    
-    // 初始化事件监听器
-    initializeEventListeners();
-    
-    // 加载保存的数据
-    loadSavedData();
-    
-    // 初始化编辑器
-    initializeEditor();
-}
-
-// 初始化月份数据
-function initializeMonths() {
-    const currentYear = 2025;
-    appState.months = [];
-    
-    for (let i = 0; i < 12; i++) {
-        const month = (i + 1) % 12 || 12;
-        const year = currentYear + Math.floor(i / 12);
-        const monthName = new Date(year, month - 1, 1).toLocaleString('zh-CN', { month: 'long' });
+// 应用状态管理
+class ResearchProgressSystem {
+    constructor() {
+        this.members = [];
+        this.currentMember = null;
+        this.currentMonth = null;
+        this.months = [];
+        this.autoSaveInterval = null;
         
-        appState.months.push({
-            id: `${year}-${String(month).padStart(2, '0')}`,
-            name: `${year}年${monthName}`,
-            year: year,
-            month: month
-        });
+        this.init();
     }
-}
 
-// 初始化团队成员
-function initializeMembers() {
-    // 8个团队成员
-    const memberNames = ['张三', '李四', '王五', '赵六', '刘七', '陈八', '杨九', '吴十'];
-    const researchAreas = [
-        '机器学习算法',
-        '自然语言处理',
-        '计算机视觉',
-        '数据挖掘',
-        '人工智能理论',
-        '智能系统',
-        '知识图谱',
-        '人机交互'
-    ];
-    
-    appState.members = memberNames.map((name, index) => {
-        return {
-            id: `MEM${String(index + 1).padStart(3, '0')}`,
-            name: name,
-            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=2c3e50&color=fff`,
-            researchArea: researchAreas[index % researchAreas.length],
-            progress: {
-                completed: Math.floor(Math.random() * 10),
-                total: 12,
+    init() {
+        this.initializeMonths();
+        this.initializeMembers();
+        this.renderUI();
+        this.setupEventListeners();
+        this.loadFromStorage();
+        this.startAutoSave();
+        
+        this.showNotification('系统初始化完成！', 'success');
+    }
+
+    initializeMonths() {
+        const startDate = new Date(2025, 0, 1); // 2025年1月开始
+        this.months = [];
+        
+        for (let i = 0; i < 12; i++) {
+            const date = new Date(startDate);
+            date.setMonth(startDate.getMonth() + i);
+            const monthId = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+            const monthName = `${date.getFullYear()}年${date.getMonth() + 1}月`;
+            
+            this.months.push({
+                id: monthId,
+                name: monthName,
+                year: date.getFullYear(),
+                month: date.getMonth() + 1
+            });
+        }
+        
+        // 设置当前月份为第一个月
+        this.currentMonth = this.months[0]?.id || null;
+    }
+
+    initializeMembers() {
+        // 8个团队成员
+        const membersData = [
+            { name: '张三', research: '机器学习与数据挖掘', status: 'active' },
+            { name: '李四', research: '自然语言处理', status: 'active' },
+            { name: '王五', research: '计算机视觉', status: 'warning' },
+            { name: '赵六', research: '人工智能理论', status: 'active' },
+            { name: '刘七', research: '知识图谱与推理', status: 'active' },
+            { name: '陈八', research: '智能系统', status: 'danger' },
+            { name: '杨九', research: '人机交互', status: 'active' },
+            { name: '吴十', research: '强化学习', status: 'active' }
+        ];
+
+        this.members = membersData.map((member, index) => {
+            const memberId = `RES${String(index + 1).padStart(3, '0')}`;
+            return {
+                id: memberId,
+                name: member.name,
+                avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name)}&background=667eea&color=fff&size=128`,
+                research: member.research,
+                status: member.status,
+                progress: Math.floor(Math.random() * 100),
+                files: [],
+                monthlyData: {},
                 lastUpdate: null
-            },
-            monthlyData: {},
-            files: [],
-            status: ['active', 'active', 'active', 'active', 'warning', 'active', 'danger', 'active'][index]
-        };
-    });
-}
+            };
+        });
+    }
 
-// 渲染团队网格
-function renderTeamGrid() {
-    const teamGrid = document.getElementById('teamGrid');
-    if (!teamGrid) return;
-    
-    teamGrid.innerHTML = '';
-    
-    appState.members.forEach(member => {
-        const currentMonth = appState.months[0]?.id || '2025-01';
-        const memberData = member.monthlyData[currentMonth] || {};
-        
-        const card = document.createElement('div');
-        card.className = 'member-card';
-        card.dataset.memberId = member.id;
-        
-        // 状态指示器
-        let statusBadge = '';
-        let statusClass = '';
-        
-        if (member.status === 'warning') {
-            statusBadge = '<span class="status-badge warning"><i class="fas fa-exclamation-triangle"></i> 需关注</span>';
-            statusClass = 'warning';
-        } else if (member.status === 'danger') {
-            statusBadge = '<span class="status-badge danger"><i class="fas fa-exclamation-circle"></i> 滞后</span>';
-            statusClass = 'danger';
-        }
-        
-        const progressPercent = member.progress.total > 0 
-            ? Math.min(100, Math.round((member.progress.completed / member.progress.total) * 100))
-            : 0;
-        
-        card.innerHTML = `
-            <div class="member-header">
-                <img src="${member.avatar}" alt="${member.name}" class="member-avatar">
-                <div class="member-info">
-                    <h3>${member.name} ${statusBadge}</h3>
-                    <span class="member-id">${member.id}</span>
+    renderUI() {
+        this.renderMemberGrid();
+        this.renderMonthButtons();
+        this.renderMemberSelect();
+        this.updateStats();
+        this.renderTimeline();
+    }
+
+    renderMemberGrid() {
+        const grid = document.getElementById('membersGrid');
+        if (!grid) return;
+
+        grid.innerHTML = '';
+
+        this.members.forEach(member => {
+            const monthlyData = member.monthlyData[this.currentMonth] || {};
+            const progressPercent = member.progress || 0;
+            
+            const card = document.createElement('div');
+            card.className = 'member-card';
+            card.innerHTML = `
+                <div class="member-header">
+                    <img src="${member.avatar}" alt="${member.name}" class="member-avatar">
+                    <div class="member-info">
+                        <h3>${member.name}</h3>
+                        <span class="member-id">${member.id}</span>
+                        ${member.status !== 'active' ? 
+                            `<span class="status-badge ${member.status}">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                ${member.status === 'warning' ? '需关注' : '滞后'}
+                            </span>` : ''
+                        }
+                    </div>
                 </div>
-            </div>
-            <div class="member-research">
-                <span class="research-tag">${member.researchArea}</span>
-            </div>
-            <div class="member-stats">
-                <div class="stat-item">
-                    <div class="stat-value">${member.progress.completed}</div>
-                    <div class="stat-label">完成任务</div>
+                <div class="member-research">
+                    <span class="research-tag">${member.research}</span>
                 </div>
-                <div class="stat-item">
-                    <div class="stat-value">${Object.keys(member.monthlyData).length}</div>
-                    <div class="stat-label">提交月数</div>
+                <div class="member-stats">
+                    <div class="stat-item">
+                        <div class="stat-value">${Object.keys(member.monthlyData).length}</div>
+                        <div class="stat-label">完成月份</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${member.files.length}</div>
+                        <div class="stat-label">文件数</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${progressPercent}%</div>
+                        <div class="stat-label">总进度</div>
+                    </div>
                 </div>
-                <div class="stat-item">
-                    <div class="stat-value">${member.files.length}</div>
-                    <div class="stat-label">文件数</div>
+                <div class="current-month">
+                    <div class="month-label">
+                        <span>${this.months[0]?.name || '当前月份'}</span>
+                        <span>进度</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${progressPercent}%"></div>
+                    </div>
+                    <div class="progress-text">
+                        ${monthlyData.content ? 
+                            monthlyData.content.replace(/<[^>]*>/g, '').substring(0, 60) + '...' : 
+                            '暂无进展记录'}
+                    </div>
                 </div>
-            </div>
-            <div class="progress-bar">
-                <div class="progress-fill" style="width: ${progressPercent}%"></div>
-            </div>
-            <div class="current-month">
-                <div class="month-label">
-                    <span>${appState.months[0]?.name || '当前月份'}</span>
-                    <span class="progress-percent">${progressPercent}%</span>
+                <div class="member-actions">
+                    <button class="btn btn-sm btn-outline view-details" data-member="${member.id}">
+                        <i class="fas fa-eye"></i> 查看详情
+                    </button>
+                    <button class="btn btn-sm btn-primary edit-progress" data-member="${member.id}">
+                        <i class="fas fa-edit"></i> 编辑进展
+                    </button>
                 </div>
-                <div class="progress-text">
-                    ${memberData.content || '暂无进展记录'}
-                </div>
-            </div>
-            <div class="member-actions">
-                <button class="btn btn-outline btn-sm view-details" data-member-id="${member.id}">
-                    <i class="fas fa-eye"></i> 查看详情
-                </button>
-                <button class="btn btn-primary btn-sm edit-progress" data-member-id="${member.id}">
-                    <i class="fas fa-edit"></i> 编辑进展
-                </button>
-            </div>
-        `;
-        
-        teamGrid.appendChild(card);
-    });
-    
-    // 添加事件监听器
-    document.querySelectorAll('.view-details').forEach(button => {
-        button.addEventListener('click', function() {
-            const memberId = this.dataset.memberId;
-            showMemberDetails(memberId);
-        });
-    });
-    
-    document.querySelectorAll('.edit-progress').forEach(button => {
-        button.addEventListener('click', function() {
-            const memberId = this.dataset.memberId;
-            editMemberProgress(memberId);
-        });
-    });
-}
+            `;
 
-// 初始化月份选择器
-function initializeMonthSelector() {
-    const monthButtons = document.getElementById('monthButtons');
-    const memberSelect = document.getElementById('memberSelect');
-    
-    if (!monthButtons || !memberSelect) return;
-    
-    // 填充月份按钮
-    appState.months.forEach(month => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'month-btn';
-        button.textContent = month.name.split('年')[1];
-        button.dataset.month = month.id;
-        button.title = month.name;
-        
-        if (month.id === appState.months[0].id) {
-            button.classList.add('active');
-            appState.currentMonth = month.id;
-        }
-        
-        button.addEventListener('click', function() {
-            document.querySelectorAll('.month-btn').forEach(btn => btn.classList.remove('active'));
-            this.classList.add('active');
-            appState.currentMonth = this.dataset.month;
-            loadMonthData();
+            grid.appendChild(card);
         });
-        
-        monthButtons.appendChild(button);
-    });
-    
-    // 填充成员选择
-    appState.members.forEach(member => {
-        const option = document.createElement('option');
-        option.value = member.id;
-        option.textContent = `${member.name} (${member.id}) - ${member.researchArea}`;
-        memberSelect.appendChild(option);
-    });
-    
-    memberSelect.addEventListener('change', function() {
-        appState.currentMember = this.value;
-        loadMonthData();
-    });
-}
 
-// 初始化事件监听器
-function initializeEventListeners() {
-    // 导出所有进展
-    const exportBtn = document.getElementById('exportAll');
-    if (exportBtn) {
-        exportBtn.addEventListener('click', exportAllProgress);
-    }
-    
-    // 保存进展
-    const saveBtn = document.getElementById('saveProgress');
-    if (saveBtn) {
-        saveBtn.addEventListener('click', saveCurrentProgress);
-    }
-    
-    // 提交进展
-    const submitBtn = document.getElementById('submitProgress');
-    if (submitBtn) {
-        submitBtn.addEventListener('click', submitProgress);
-    }
-    
-    // 清空编辑器
-    const clearBtn = document.getElementById('clearEditor');
-    if (clearBtn) {
-        clearBtn.addEventListener('click', clearEditor);
-    }
-    
-    // 文件上传
-    const uploadArea = document.getElementById('uploadArea');
-    const fileInput = document.getElementById('fileInput');
-    const browseLink = document.getElementById('browseFiles');
-    
-    if (uploadArea && fileInput && browseLink) {
-        uploadArea.addEventListener('click', () => fileInput.click());
-        browseLink.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', handleFileUpload);
-        
-        // 拖放上传
-        uploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadArea.style.backgroundColor = 'rgba(52, 152, 219, 0.1)';
+        // 添加事件监听器
+        grid.querySelectorAll('.view-details').forEach(btn => {
+            btn.addEventListener('click', (e) => this.showMemberDetails(e.target.dataset.member));
         });
-        
-        uploadArea.addEventListener('dragleave', () => {
-            uploadArea.style.backgroundColor = '';
-        });
-        
-        uploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadArea.style.backgroundColor = '';
-            handleFileUpload(e);
+
+        grid.querySelectorAll('.edit-progress').forEach(btn => {
+            btn.addEventListener('click', (e) => this.editMemberProgress(e.target.dataset.member));
         });
     }
-    
-    // 模态框关闭
-    const modalClose = document.querySelector('.modal-close');
-    const modal = document.getElementById('memberModal');
-    
-    if (modalClose && modal) {
-        modalClose.addEventListener('click', () => {
-            modal.style.display = 'none';
+
+    renderMonthButtons() {
+        const container = document.getElementById('monthButtons');
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        this.months.forEach(month => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = `month-btn ${month.id === this.currentMonth ? 'active' : ''}`;
+            button.textContent = month.name;
+            button.dataset.month = month.id;
+            button.addEventListener('click', () => this.selectMonth(month.id));
+            container.appendChild(button);
+        });
+    }
+
+    renderMemberSelect() {
+        const select = document.getElementById('memberSelect');
+        if (!select) return;
+
+        select.innerHTML = '<option value="">请选择团队成员</option>';
+        
+        this.members.forEach(member => {
+            const option = document.createElement('option');
+            option.value = member.id;
+            option.textContent = `${member.name} (${member.id}) - ${member.research}`;
+            select.appendChild(option);
+        });
+
+        select.addEventListener('change', (e) => this.selectMember(e.target.value));
+    }
+
+    selectMember(memberId) {
+        this.currentMember = memberId;
+        this.loadMemberProgress();
+    }
+
+    selectMonth(monthId) {
+        this.currentMonth = monthId;
+        
+        // 更新按钮状态
+        document.querySelectorAll('.month-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.month === monthId);
         });
         
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                modal.style.display = 'none';
-            }
-        });
+        this.loadMemberProgress();
     }
-}
 
-// 初始化编辑器
-function initializeEditor() {
-    const editor = document.getElementById('progressEditor');
-    if (!editor) return;
-    
-    // 设置编辑器工具栏功能
-    const toolButtons = document.querySelectorAll('.tool-btn');
-    toolButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const command = this.dataset.command;
-            document.execCommand(command, false, null);
-            editor.focus();
-        });
-    });
-}
-
-// 加载月份数据
-function loadMonthData() {
-    if (!appState.currentMember || !appState.currentMonth) {
-        return;
-    }
-    
-    const member = appState.members.find(m => m.id === appState.currentMember);
-    if (!member) return;
-    
-    const editor = document.getElementById('progressEditor');
-    if (editor) {
-        const monthData = member.monthlyData[appState.currentMonth] || {};
-        editor.innerHTML = monthData.content || '';
-    }
-    
-    // 更新文件列表
-    updateFileList();
-}
-
-// 保存当前进展
-function saveCurrentProgress() {
-    if (!appState.currentMember || !appState.currentMonth) {
-        alert('请先选择成员和月份！');
-        return;
-    }
-    
-    const editor = document.getElementById('progressEditor');
-    if (!editor) return;
-    
-    const content = editor.innerHTML.trim();
-    if (!content) {
-        alert('请输入进展内容！');
-        return;
-    }
-    
-    const member = appState.members.find(m => m.id === appState.currentMember);
-    if (!member) return;
-    
-    // 保存数据
-    if (!member.monthlyData[appState.currentMonth]) {
-        member.monthlyData[appState.currentMonth] = {};
-    }
-    
-    member.monthlyData[appState.currentMonth] = {
-        content: content,
-        lastModified: new Date().toISOString(),
-        files: member.monthlyData[appState.currentMonth]?.files || []
-    };
-    
-    // 更新进度
-    member.progress.completed = Object.keys(member.monthlyData).length;
-    member.progress.lastUpdate = new Date().toISOString();
-    
-    // 保存到本地存储
-    saveToLocalStorage();
-    
-    // 更新显示
-    renderTeamGrid();
-    updateTimeline();
-    
-    showNotification('进展已保存成功！', 'success');
-}
-
-// 提交进展
-function submitProgress() {
-    if (!appState.currentMember || !appState.currentMonth) {
-        alert('请先选择成员和月份！');
-        return;
-    }
-    
-    const member = appState.members.find(m => m.id === appState.currentMember);
-    if (!member) return;
-    
-    const monthData = member.monthlyData[appState.currentMonth];
-    if (!monthData || !monthData.content) {
-        alert('请先保存进展内容！');
-        return;
-    }
-    
-    // 标记为已提交
-    monthData.submitted = true;
-    monthData.submittedAt = new Date().toISOString();
-    
-    // 更新状态
-    member.status = 'active';
-    
-    // 保存到本地存储
-    saveToLocalStorage();
-    
-    // 更新显示
-    renderTeamGrid();
-    
-    showNotification('进展已成功提交给导师！', 'success');
-}
-
-// 处理文件上传
-function handleFileUpload(event) {
-    const files = event.type === 'change' 
-        ? event.target.files 
-        : event.dataTransfer.files;
-    
-    if (!files || files.length === 0) return;
-    
-    const member = appState.currentMember 
-        ? appState.members.find(m => m.id === appState.currentMember)
-        : null;
-    
-    if (!member) {
-        alert('请先选择成员！');
-        return;
-    }
-    
-    Array.from(files).forEach(file => {
-        if (file.size > 50 * 1024 * 1024) { // 50MB限制
-            alert(`文件 ${file.name} 超过50MB限制！`);
+    loadMemberProgress() {
+        if (!this.currentMember || !this.currentMonth) {
+            document.getElementById('progressEditor').innerHTML = 
+                '<p>请先选择成员和月份...</p>';
             return;
         }
-        
-        const fileData = {
-            id: 'file_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-            name: file.name,
-            size: formatFileSize(file.size),
-            type: getFileType(file.name),
-            uploadDate: new Date().toISOString(),
-            month: appState.currentMonth,
-            file: file
-        };
-        
-        // 添加到成员文件列表
-        member.files.push(fileData);
-        
-        // 添加到月份数据
-        if (!member.monthlyData[appState.currentMonth]) {
-            member.monthlyData[appState.currentMonth] = {};
-        }
-        
-        if (!member.monthlyData[appState.currentMonth].files) {
-            member.monthlyData[appState.currentMonth].files = [];
-        }
-        
-        member.monthlyData[appState.currentMonth].files.push(fileData);
-    });
-    
-    // 更新文件列表显示
-    updateFileList();
-    
-    // 保存到本地存储
-    saveToLocalStorage();
-    
-    showNotification(`成功上传 ${files.length} 个文件！`, 'success');
-    
-    // 清空文件输入
-    const fileInput = document.getElementById('fileInput');
-    if (fileInput) {
-        fileInput.value = '';
-    }
-}
 
-// 更新文件列表显示
-function updateFileList() {
-    const uploadedFiles = document.getElementById('uploadedFiles');
-    if (!uploadedFiles) return;
-    
-    uploadedFiles.innerHTML = '';
-    
-    if (!appState.currentMember || !appState.currentMonth) {
-        uploadedFiles.innerHTML = '<p class="no-files">请先选择成员和月份</p>';
-        return;
+        const member = this.members.find(m => m.id === this.currentMember);
+        if (!member) return;
+
+        const editor = document.getElementById('progressEditor');
+        if (!editor) return;
+
+        const monthlyData = member.monthlyData[this.currentMonth];
+        editor.innerHTML = monthlyData?.content || 
+            `<p>请在此编辑${this.getMonthName(this.currentMonth)}的科研进展...</p>
+             <p>包括：实验进展、数据分析、论文撰写、问题与解决方案、下月计划等。</p>`;
+
+        this.updateFileList();
+        this.updateCharCount();
     }
-    
-    const member = appState.members.find(m => m.id === appState.currentMember);
-    if (!member) return;
-    
-    const monthData = member.monthlyData[appState.currentMonth];
-    if (!monthData || !monthData.files || monthData.files.length === 0) {
-        uploadedFiles.innerHTML = '<p class="no-files">本月暂无上传文件</p>';
-        return;
-    }
-    
-    monthData.files.forEach(file => {
-        const fileItem = document.createElement('div');
-        fileItem.className = 'file-item';
-        fileItem.innerHTML = `
-            <div class="file-info">
-                <i class="fas fa-file-${file.type} file-icon"></i>
-                <div>
-                    <div class="file-name">${file.name}</div>
-                    <div class="file-meta">${file.size} • ${new Date(file.uploadDate).toLocaleDateString()}</div>
+
+    updateFileList() {
+        const container = document.getElementById('uploadedFiles');
+        if (!container) return;
+
+        if (!this.currentMember || !this.currentMonth) {
+            container.innerHTML = '<p class="no-files">请先选择成员和月份</p>';
+            return;
+        }
+
+        const member = this.members.find(m => m.id === this.currentMember);
+        if (!member) return;
+
+        const monthlyData = member.monthlyData[this.currentMonth];
+        const files = monthlyData?.files || [];
+
+        if (files.length === 0) {
+            container.innerHTML = '<p class="no-files">本月暂无上传文件</p>';
+            return;
+        }
+
+        container.innerHTML = files.map(file => `
+            <div class="file-item" data-file="${file.id}">
+                <div class="file-info">
+                    <i class="fas fa-file-${this.getFileIcon(file.type)} file-icon"></i>
+                    <div>
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-meta">${file.size} • ${new Date(file.uploadDate).toLocaleDateString()}</div>
+                    </div>
+                </div>
+                <div class="file-actions">
+                    <button class="btn-icon download-file" title="下载">
+                        <i class="fas fa-download"></i>
+                    </button>
+                    <button class="btn-icon delete-file" title="删除">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 </div>
             </div>
-            <div class="file-actions">
-                <button class="btn-icon download-file" data-file-id="${file.id}" title="下载">
-                    <i class="fas fa-download"></i>
-                </button>
-                <button class="btn-icon delete-file" data-file-id="${file.id}" title="删除">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </div>
-        `;
-        
-        uploadedFiles.appendChild(fileItem);
-    });
-    
-    // 添加事件监听器
-    document.querySelectorAll('.download-file').forEach(button => {
-        button.addEventListener('click', function() {
-            const fileId = this.dataset.fileId;
-            downloadFile(fileId);
-        });
-    });
-    
-    document.querySelectorAll('.delete-file').forEach(button => {
-        button.addEventListener('click', function() {
-            const fileId = this.dataset.fileId;
-            deleteFile(fileId);
-        });
-    });
-}
+        `).join('');
 
-// 显示成员详情
-function showMemberDetails(memberId) {
-    const member = appState.members.find(m => m.id === memberId);
-    if (!member) return;
-    
-    const modal = document.getElementById('memberModal');
-    const modalMemberName = document.getElementById('modalMemberName');
-    const statCompleted = document.getElementById('statCompleted');
-    const statSubmitted = document.getElementById('statSubmitted');
-    const statLastActive = document.getElementById('statLastActive');
-    const progressDetails = document.getElementById('modalProgressDetails');
-    
-    if (!modal || !modalMemberName) return;
-    
-    // 更新基本信息
-    modalMemberName.textContent = `${member.name} (${member.id}) - ${member.researchArea}`;
-    
-    // 更新统计数据
-    if (statCompleted) {
-        statCompleted.textContent = Object.keys(member.monthlyData).length;
+        // 添加事件监听器
+        container.querySelectorAll('.delete-file').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const fileItem = e.target.closest('.file-item');
+                const fileId = fileItem.dataset.file;
+                this.deleteFile(fileId);
+            });
+        });
     }
-    
-    if (statSubmitted) {
-        const submittedMonths = Object.values(member.monthlyData).filter(data => data.submitted).length;
-        statSubmitted.textContent = submittedMonths;
+
+    getFileIcon(fileType) {
+        const icons = {
+            'pdf': 'pdf',
+            'doc': 'word',
+            'docx': 'word',
+            'txt': 'alt',
+            'ppt': 'powerpoint',
+            'pptx': 'powerpoint',
+            'xls': 'excel',
+            'xlsx': 'excel',
+            'jpg': 'image',
+            'jpeg': 'image',
+            'png': 'image',
+            'zip': 'archive',
+            'rar': 'archive'
+        };
+        return icons[fileType] || 'file';
     }
-    
-    if (statLastActive) {
-        if (member.progress.lastUpdate) {
-            const lastActive = new Date(member.progress.lastUpdate);
-            statLastActive.textContent = lastActive.toLocaleDateString();
-        } else {
-            statLastActive.textContent = '从未';
+
+    getMonthName(monthId) {
+        const month = this.months.find(m => m.id === monthId);
+        return month ? month.name : '未知月份';
+    }
+
+    setupEventListeners() {
+        // 编辑器工具栏
+        document.querySelectorAll('.tool-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const command = btn.dataset.command;
+                const value = btn.dataset.value;
+                document.execCommand(command, false, value);
+            });
+        });
+
+        // 文件上传
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const browseLink = document.getElementById('browseFiles');
+
+        if (uploadArea) {
+            uploadArea.addEventListener('click', () => fileInput.click());
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.style.backgroundColor = 'rgba(102, 126, 234, 0.1)';
+            });
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.style.backgroundColor = '';
+            });
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.style.backgroundColor = '';
+                this.handleFileUpload(e.dataTransfer.files);
+            });
+        }
+
+        if (browseLink) {
+            browseLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                fileInput.click();
+            });
+        }
+
+        if (fileInput) {
+            fileInput.addEventListener('change', (e) => this.handleFileUpload(e.target.files));
+        }
+
+        // 按钮事件
+        const saveBtn = document.getElementById('saveBtn');
+        const submitBtn = document.getElementById('submitBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const exportBtn = document.getElementById('exportBtn');
+        const refreshBtn = document.getElementById('refreshBtn');
+
+        if (saveBtn) saveBtn.addEventListener('click', () => this.saveProgress());
+        if (submitBtn) submitBtn.addEventListener('click', () => this.submitProgress());
+        if (clearBtn) clearBtn.addEventListener('click', () => this.clearEditor());
+        if (exportBtn) exportBtn.addEventListener('click', () => this.exportData());
+        if (refreshBtn) refreshBtn.addEventListener('click', () => location.reload());
+
+        // 模态框
+        const modalClose = document.querySelector('.modal-close');
+        const modal = document.getElementById('memberModal');
+
+        if (modalClose) {
+            modalClose.addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+        }
+
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        }
+
+        // 导航
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                e.target.classList.add('active');
+                
+                const page = e.target.dataset.page;
+                this.showPage(page);
+            });
+        });
+
+        // 编辑器输入监听
+        const editor = document.getElementById('progressEditor');
+        if (editor) {
+            editor.addEventListener('input', () => this.updateCharCount());
         }
     }
-    
-    // 更新详细进展
-    if (progressDetails) {
-        progressDetails.innerHTML = '';
+
+    updateCharCount() {
+        const editor = document.getElementById('progressEditor');
+        const charCount = document.getElementById('charCount');
+        if (!editor || !charCount) return;
+
+        const text = editor.innerText.replace(/\s+/g, ' ').trim();
+        const charLength = text.length;
+        charCount.textContent = `${charLength} 字`;
+    }
+
+    async handleFileUpload(files) {
+        if (!files || files.length === 0) return;
+        if (!this.currentMember || !this.currentMonth) {
+            this.showNotification('请先选择成员和月份！', 'warning');
+            return;
+        }
+
+        const member = this.members.find(m => m.id === this.currentMember);
+        if (!member) return;
+
+        for (const file of files) {
+            if (file.size > 50 * 1024 * 1024) { // 50MB
+                this.showNotification(`文件 ${file.name} 超过50MB限制！`, 'error');
+                continue;
+            }
+
+            const fileData = {
+                id: 'file_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+                name: file.name,
+                size: this.formatFileSize(file.size),
+                type: file.name.split('.').pop().toLowerCase(),
+                uploadDate: new Date().toISOString(),
+                data: await this.readFileAsBase64(file)
+            };
+
+            if (!member.monthlyData[this.currentMonth]) {
+                member.monthlyData[this.currentMonth] = { files: [] };
+            }
+
+            if (!member.monthlyData[this.currentMonth].files) {
+                member.monthlyData[this.currentMonth].files = [];
+            }
+
+            member.monthlyData[this.currentMonth].files.push(fileData);
+            member.files.push(fileData);
+
+            this.showNotification(`已上传: ${file.name}`, 'success');
+        }
+
+        this.updateFileList();
+        this.saveToStorage();
+        this.updateStats();
+    }
+
+    readFileAsBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    deleteFile(fileId) {
+        if (!this.currentMember) return;
+
+        const member = this.members.find(m => m.id === this.currentMember);
+        if (!member) return;
+
+        // 从所有位置删除文件
+        member.files = member.files.filter(f => f.id !== fileId);
         
-        if (Object.keys(member.monthlyData).length === 0) {
+        Object.keys(member.monthlyData).forEach(month => {
+            if (member.monthlyData[month]?.files) {
+                member.monthlyData[month].files = member.monthlyData[month].files.filter(f => f.id !== fileId);
+            }
+        });
+
+        this.updateFileList();
+        this.saveToStorage();
+        this.updateStats();
+        this.showNotification('文件已删除', 'info');
+    }
+
+    saveProgress() {
+        if (!this.currentMember || !this.currentMonth) {
+            this.showNotification('请先选择成员和月份！', 'warning');
+            return;
+        }
+
+        const editor = document.getElementById('progressEditor');
+        if (!editor) return;
+
+        const content = editor.innerHTML.trim();
+        if (!content || content === '<p><br></p>') {
+            this.showNotification('请输入进展内容！', 'warning');
+            return;
+        }
+
+        const member = this.members.find(m => m.id === this.currentMember);
+        if (!member) return;
+
+        if (!member.monthlyData[this.currentMonth]) {
+            member.monthlyData[this.currentMonth] = {};
+        }
+
+        member.monthlyData[this.currentMonth] = {
+            ...member.monthlyData[this.currentMonth],
+            content: content,
+            lastModified: new Date().toISOString(),
+            submitted: false
+        };
+
+        // 更新进度
+        const completedMonths = Object.keys(member.monthlyData).filter(
+            month => member.monthlyData[month]?.content
+        ).length;
+        member.progress = Math.min(100, Math.round((completedMonths / 12) * 100));
+
+        member.lastUpdate = new Date().toISOString();
+        member.status = 'active';
+
+        this.saveToStorage();
+        this.renderMemberGrid();
+        this.updateStats();
+        this.updateTimeline('save', {
+            member: member.name,
+            month: this.getMonthName(this.currentMonth)
+        });
+
+        this.showNotification('进展已保存！', 'success');
+    }
+
+    submitProgress() {
+        if (!this.currentMember || !this.currentMonth) {
+            this.showNotification('请先选择成员和月份！', 'warning');
+            return;
+        }
+
+        const member = this.members.find(m => m.id === this.currentMember);
+        if (!member || !member.monthlyData[this.currentMonth]?.content) {
+            this.showNotification('请先保存进展内容！', 'warning');
+            return;
+        }
+
+        member.monthlyData[this.currentMonth].submitted = true;
+        member.monthlyData[this.currentMonth].submittedAt = new Date().toISOString();
+
+        this.saveToStorage();
+        this.renderMemberGrid();
+        this.updateTimeline('submit', {
+            member: member.name,
+            month: this.getMonthName(this.currentMonth)
+        });
+
+        this.showNotification('进展已提交给导师！', 'success');
+    }
+
+    clearEditor() {
+        if (!confirm('确定要清空编辑器内容吗？')) return;
+        
+        const editor = document.getElementById('progressEditor');
+        if (editor) {
+            editor.innerHTML = '<p>请在此编辑本月科研进展...</p>';
+            this.updateCharCount();
+        }
+    }
+
+    exportData() {
+        const exportData = {
+            exportDate: new Date().toISOString(),
+            system: '学术科研进展管理系统',
+            version: '1.0.0',
+            data: this.members.map(member => ({
+                id: member.id,
+                name: member.name,
+                research: member.research,
+                progress: member.progress,
+                lastUpdate: member.lastUpdate,
+                monthlyData: member.monthlyData,
+                files: member.files.map(f => ({
+                    name: f.name,
+                    size: f.size,
+                    type: f.type,
+                    uploadDate: f.uploadDate
+                }))
+            }))
+        };
+
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { 
+            type: 'application/json' 
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `科研进展报告_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        this.showNotification('数据导出成功！', 'success');
+    }
+
+    updateStats() {
+        const totalMembers = this.members.length;
+        const totalProgress = Math.round(
+            this.members.reduce((sum, m) => sum + (m.progress || 0), 0) / totalMembers
+        );
+        const totalFiles = this.members.reduce((sum, m) => sum + m.files.length, 0);
+        
+        const currentMonth = this.months[0]?.id;
+        const monthSubmissions = this.members.filter(m => 
+            m.monthlyData[currentMonth]?.submitted
+        ).length;
+
+        document.getElementById('totalMembers').textContent = totalMembers;
+        document.getElementById('totalProgress').textContent = totalProgress + '%';
+        document.getElementById('totalFiles').textContent = totalFiles;
+        document.getElementById('monthSubmissions').textContent = monthSubmissions;
+    }
+
+    updateTimeline(action, data) {
+        const timeline = document.getElementById('timeline');
+        if (!timeline) return;
+
+        const timelineItem = document.createElement('div');
+        timelineItem.className = 'timeline-item';
+        
+        let actionText = '';
+        let icon = 'info-circle';
+        
+        switch (action) {
+            case 'save':
+                actionText = `${data.member} 保存了 ${data.month} 的进展`;
+                icon = 'save';
+                break;
+            case 'submit':
+                actionText = `${data.member} 提交了 ${data.month} 的进展`;
+                icon = 'paper-plane';
+                break;
+            default:
+                actionText = '系统更新';
+        }
+
+        timelineItem.innerHTML = `
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+                <div class="timeline-date">刚刚</div>
+                <div class="timeline-text">
+                    <i class="fas fa-${icon}"></i> ${actionText}
+                </div>
+            </div>
+        `;
+
+        timeline.prepend(timelineItem);
+        
+        // 只保留最近的10条记录
+        const items = timeline.querySelectorAll('.timeline-item');
+        if (items.length > 10) {
+            items[items.length - 1].remove();
+        }
+    }
+
+    renderTimeline() {
+        const timeline = document.getElementById('timeline');
+        if (!timeline) return;
+
+        // 这里可以添加从存储中加载时间轴记录的逻辑
+    }
+
+    showMemberDetails(memberId) {
+        const member = this.members.find(m => m.id === memberId);
+        if (!member) return;
+
+        const modal = document.getElementById('memberModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalAvatar = document.getElementById('modalAvatar');
+        const modalName = document.getElementById('modalName');
+        const modalId = document.getElementById('modalId');
+        const modalResearch = document.getElementById('modalResearch');
+        const modalCompleted = document.getElementById('modalCompleted');
+        const modalSubmitted = document.getElementById('modalSubmitted');
+        const modalFiles = document.getElementById('modalFiles');
+        const progressDetails = document.getElementById('progressDetails');
+
+        if (!modal) return;
+
+        // 更新基本信息
+        modalTitle.textContent = `${member.name} 的详细进展`;
+        modalAvatar.src = member.avatar;
+        modalAvatar.alt = member.name;
+        modalName.textContent = member.name;
+        modalId.textContent = `学号/工号: ${member.id}`;
+        modalResearch.textContent = `研究方向: ${member.research}`;
+
+        // 更新统计数据
+        const completedMonths = Object.keys(member.monthlyData).filter(
+            month => member.monthlyData[month]?.content
+        ).length;
+        const submittedMonths = Object.keys(member.monthlyData).filter(
+            month => member.monthlyData[month]?.submitted
+        ).length;
+
+        modalCompleted.textContent = completedMonths;
+        modalSubmitted.textContent = submittedMonths;
+        modalFiles.textContent = member.files.length;
+
+        // 更新详细进展
+        progressDetails.innerHTML = '';
+
+        if (completedMonths === 0) {
             progressDetails.innerHTML = '<p class="no-data">暂无进展记录</p>';
         } else {
             // 按月份倒序排列
             const sortedMonths = Object.keys(member.monthlyData)
                 .sort()
                 .reverse();
-            
-            sortedMonths.forEach(monthKey => {
-                const monthData = member.monthlyData[monthKey];
-                const month = appState.months.find(m => m.id === monthKey);
-                
-                if (monthData && month) {
-                    const monthElement = document.createElement('div');
-                    monthElement.className = 'month-detail';
-                    monthElement.innerHTML = `
-                        <div class="month-detail-header">
-                            <h4>${month.name}</h4>
-                            <span class="detail-date">${new Date(monthData.lastModified).toLocaleDateString()}</span>
+
+            sortedMonths.forEach(monthId => {
+                const data = member.monthlyData[monthId];
+                if (!data?.content) return;
+
+                const monthElement = document.createElement('div');
+                monthElement.className = 'month-detail';
+                monthElement.innerHTML = `
+                    <div class="month-header">
+                        <h4>${this.getMonthName(monthId)}</h4>
+                        <span class="detail-date">
+                            ${new Date(data.lastModified).toLocaleDateString()}
+                            ${data.submitted ? '<span class="status-submitted">已提交</span>' : '<span class="status-draft">草稿</span>'}
+                        </span>
+                    </div>
+                    <div class="month-content">${data.content}</div>
+                    ${data.files?.length > 0 ? `
+                        <div class="month-files">
+                            <strong>相关文件 (${data.files.length}个):</strong>
+                            <ul>
+                                ${data.files.map(file => `<li>${file.name} (${file.size})</li>`).join('')}
+                            </ul>
                         </div>
-                        <div class="month-content">${monthData.content}</div>
-                        ${monthData.files && monthData.files.length > 0 ? `
-                            <div class="month-files">
-                                <strong>相关文件:</strong>
-                                <ul>
-                                    ${monthData.files.map(file => `<li>${file.name} (${file.size})</li>`).join('')}
-                                </ul>
-                            </div>
-                        ` : ''}
-                        <div class="month-status">
-                            ${monthData.submitted ? 
-                                '<span class="status submitted"><i class="fas fa-check-circle"></i> 已提交</span>' : 
-                                '<span class="status draft"><i class="fas fa-edit"></i> 草稿</span>'
-                            }
-                        </div>
-                    `;
-                    
-                    progressDetails.appendChild(monthElement);
-                }
+                    ` : ''}
+                `;
+                progressDetails.appendChild(monthElement);
             });
         }
-    }
-    
-    modal.style.display = 'flex';
-}
 
-// 编辑成员进展
-function editMemberProgress(memberId) {
-    appState.currentMember = memberId;
-    
-    const memberSelect = document.getElementById('memberSelect');
-    if (memberSelect) {
-        memberSelect.value = memberId;
+        modal.style.display = 'flex';
     }
-    
-    loadMonthData();
-    
-    // 滚动到编辑器
-    const editorSection = document.querySelector('.progress-editor-section');
-    if (editorSection) {
-        editorSection.scrollIntoView({ behavior: 'smooth' });
-    }
-    
-    const editor = document.getElementById('progressEditor');
-    if (editor) {
-        editor.focus();
-    }
-}
 
-// 导出所有进展
-function exportAllProgress() {
-    const exportData = {
-        exportDate: new Date().toISOString(),
-        totalMembers: appState.members.length,
-        members: appState.members.map(member => ({
-            id: member.id,
-            name: member.name,
-            researchArea: member.researchArea,
-            progress: member.progress,
-            monthlyData: member.monthlyData,
-            files: member.files.map(f => ({ 
-                name: f.name, 
-                size: f.size, 
-                uploadDate: f.uploadDate 
-            }))
-        }))
-    };
-    
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `科研进展报告_${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    showNotification('数据导出成功！', 'success');
-}
-
-// 保存到本地存储
-function saveToLocalStorage() {
-    try {
-        localStorage.setItem('researchProgressData', JSON.stringify(appState.members));
-        localStorage.setItem('researchProgressLastSave', new Date().toISOString());
-    } catch (error) {
-        console.error('保存到本地存储失败:', error);
+    editMemberProgress(memberId) {
+        this.currentMember = memberId;
+        
+        const select = document.getElementById('memberSelect');
+        if (select) {
+            select.value = memberId;
+        }
+        
+        this.loadMemberProgress();
+        this.showNotification(`正在编辑 ${this.members.find(m => m.id === memberId)?.name} 的进展`, 'info');
     }
-}
 
-// 从本地存储加载数据
-function loadSavedData() {
-    try {
-        const savedData = localStorage.getItem('researchProgressData');
-        if (savedData) {
-            const parsedData = JSON.parse(savedData);
-            if (Array.isArray(parsedData) && parsedData.length > 0) {
-                // 合并保存的数据
-                parsedData.forEach(savedMember => {
-                    const existingMember = appState.members.find(m => m.id === savedMember.id);
-                    if (existingMember) {
-                        // 保留新数据的基本信息，合并进度和月度数据
-                        existingMember.progress = savedMember.progress || existingMember.progress;
-                        existingMember.monthlyData = savedMember.monthlyData || existingMember.monthlyData;
-                        existingMember.files = savedMember.files || existingMember.files;
-                        existingMember.status = savedMember.status || existingMember.status;
-                    }
-                });
+    showPage(pageId) {
+        // 隐藏所有页面
+        document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+        document.querySelectorAll('section').forEach(s => s.style.display = 'none');
+        
+        // 显示目标页面
+        const targetPage = pageId === 'dashboard' ? 'dashboardPage' : pageId + 'Page';
+        const pageElement = document.getElementById(targetPage);
+        if (pageElement) {
+            pageElement.style.display = 'block';
+            pageElement.classList.remove('hidden');
+        }
+    }
+
+    showNotification(message, type = 'info') {
+        if (typeof Toastify !== 'undefined') {
+            Toastify({
+                text: message,
+                duration: 3000,
+                gravity: "top",
+                position: "right",
+                backgroundColor: type === 'success' ? "#27ae60" : 
+                              type === 'error' ? "#e74c3c" : 
+                              type === 'warning' ? "#f39c12" : "#3498db",
+                stopOnFocus: true
+            }).showToast();
+        } else {
+            alert(message);
+        }
+    }
+
+    saveToStorage() {
+        try {
+            const data = {
+                members: this.members,
+                lastSave: new Date().toISOString()
+            };
+            localStorage.setItem('researchProgressData', JSON.stringify(data));
+            
+            const status = document.getElementById('autoSaveStatus');
+            if (status) {
+                status.textContent = '已保存 ' + new Date().toLocaleTimeString();
+                status.style.color = '#27ae60';
                 
-                renderTeamGrid();
-                showNotification('已加载保存的数据', 'info');
+                setTimeout(() => {
+                    status.textContent = '已保存';
+                }, 2000);
             }
+        } catch (error) {
+            console.error('保存数据失败:', error);
         }
-    } catch (error) {
-        console.error('从本地存储加载数据失败:', error);
     }
-}
 
-// 更新时间轴
-function updateTimeline() {
-    const timeline = document.getElementById('progressTimeline');
-    if (!timeline) return;
-    
-    timeline.innerHTML = '';
-    
-    // 收集所有更新
-    const allUpdates = [];
-    
-    appState.members.forEach(member => {
-        Object.entries(member.monthlyData).forEach(([monthId, data]) => {
-            if (data.lastModified) {
-                allUpdates.push({
-                    member: member.name,
-                    memberId: member.id,
-                    month: monthId,
-                    content: data.content,
-                    date: new Date(data.lastModified),
-                    type: data.submitted ? 'submitted' : 'draft'
-                });
+    loadFromStorage() {
+        try {
+            const saved = localStorage.getItem('researchProgressData');
+            if (saved) {
+                const data = JSON.parse(saved);
+                if (data.members) {
+                    // 合并保存的数据
+                    this.members.forEach(member => {
+                        const savedMember = data.members.find(m => m.id === member.id);
+                        if (savedMember) {
+                            Object.assign(member, {
+                                monthlyData: savedMember.monthlyData || {},
+                                files: savedMember.files || [],
+                                progress: savedMember.progress || 0,
+                                lastUpdate: savedMember.lastUpdate
+                            });
+                        }
+                    });
+                    
+                    this.renderMemberGrid();
+                    this.updateStats();
+                    this.showNotification('已加载保存的数据', 'info');
+                }
             }
-        });
-    });
-    
-    // 按日期排序
-    allUpdates.sort((a, b) => b.date - a.date);
-    
-    // 只显示最近的10条
-    const recentUpdates = allUpdates.slice(0, 10);
-    
-    if (recentUpdates.length === 0) {
-        timeline.innerHTML = '<p class="no-updates">暂无更新记录</p>';
-        return;
+        } catch (error) {
+            console.error('加载数据失败:', error);
+        }
     }
-    
-    recentUpdates.forEach(update => {
-        const monthInfo = appState.months.find(m => m.id === update.month);
-        const monthName = monthInfo ? monthInfo.name : update.month;
-        
-        const updateElement = document.createElement('div');
-        updateElement.className = 'timeline-item';
-        updateElement.innerHTML = `
-            <div class="timeline-content">
-                <div class="timeline-header">
-                    <strong>${update.member}</strong>
-                    <span class="timeline-date">${update.date.toLocaleString()}</span>
-                </div>
-                <div class="timeline-month">${monthName}</div>
-                <div class="timeline-text">${update.content.substring(0, 100)}${update.content.length > 100 ? '...' : ''}</div>
-                <span class="timeline-status ${update.type}">
-                    ${update.type === 'submitted' ? '已提交' : '草稿'}
-                </span>
-            </div>
-        `;
-        
-        timeline.appendChild(updateElement);
-    });
+
+    startAutoSave() {
+        // 每30秒自动保存一次
+        this.autoSaveInterval = setInterval(() => {
+            this.saveProgress();
+        }, 30000);
+    }
 }
 
-// 显示通知
-function showNotification(message, type = 'info') {
-    // 创建通知元素
-    const notification = document.createElement('div');
-    notification.className = `notification notification-${type}`;
-    notification.innerHTML = `
-        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
-        <span>${message}</span>
+// 初始化应用
+let app;
+
+document.addEventListener('DOMContentLoaded', () => {
+    app = new ResearchProgressSystem();
+    
+    // 添加一些CSS样式
+    const style = document.createElement('style');
+    style.textContent = `
+        .toastify {
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            font-family: 'Roboto', 'Noto Serif SC', sans-serif;
+        }
+        
+        .month-detail {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .month-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .month-header h4 {
+            color: #2c3e50;
+            margin: 0;
+        }
+        
+        .detail-date {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+        
+        .month-content {
+            line-height: 1.6;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .month-files {
+            background: white;
+            border-radius: 6px;
+            padding: 10px;
+            font-size: 0.9rem;
+        }
+        
+        .month-files ul {
+            margin: 5px 0 0 20px;
+            padding: 0;
+        }
+        
+        .month-files li {
+            margin: 3px 0;
+        }
+        
+        .status-submitted {
+            background: #27ae60;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            margin-left: 10px;
+        }
+        
+        .status-draft {
+            background: #f39c12;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            margin-left: 10px;
+        }
+        
+        .no-data {
+            text-align: center;
+            color: #7f8c8d;
+            font-style: italic;
+            padding: 20px;
+        }
     `;
-    
-    // 添加到页面
-    document.body.appendChild(notification);
-    
-    // 显示动画
-    setTimeout(() => {
-        notification.classList.add('show');
-    }, 10);
-    
-    // 自动移除
-    setTimeout(() => {
-        notification.classList.remove('show');
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.parentNode.removeChild(notification);
-            }
-        }, 300);
-    }, 3000);
-}
-
-// 辅助函数
-function formatFileSize(bytes) {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-}
-
-function getFileType(filename) {
-    const extension = filename.split('.').pop().toLowerCase();
-    const fileTypes = {
-        'pdf': 'pdf',
-        'doc': 'word',
-        'docx': 'word',
-        'txt': 'alt',
-        'ppt': 'powerpoint',
-        'pptx': 'powerpoint',
-        'xls': 'excel',
-        'xlsx': 'excel',
-        'jpg': 'image',
-        'jpeg': 'image',
-        'png': 'image',
-        'gif': 'image',
-        'zip': 'archive',
-        'rar': 'archive',
-        '7z': 'archive'
-    };
-    
-    return fileTypes[extension] || 'file';
-}
-
-function clearEditor() {
-    const editor = document.getElementById('progressEditor');
-    if (editor) {
-        editor.innerHTML = '';
-    }
-}
-
-function downloadFile(fileId) {
-    const member = appState.currentMember 
-        ? appState.members.find(m => m.id === appState.currentMember)
-        : null;
-    
-    if (!member) return;
-    
-    const file = member.files.find(f => f.id === fileId);
-    if (!file || !file.file) {
-        alert('文件不存在或无法下载！');
-        return;
-    }
-    
-    const url = URL.createObjectURL(file.file);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = file.name;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-}
-
-function deleteFile(fileId) {
-    if (!confirm('确定要删除这个文件吗？')) {
-        return;
-    }
-    
-    const member = appState.currentMember 
-        ? appState.members.find(m => m.id === appState.currentMember)
-        : null;
-    
-    if (!member) return;
-    
-    member.files = member.files.filter(f => f.id !== fileId);
-    
-    Object.keys(member.monthlyData).forEach(monthKey => {
-        if (member.monthlyData[monthKey] && member.monthlyData[monthKey].files) {
-            member.monthlyData[monthKey].files = member.monthlyData[monthKey].files.filter(f => f.id !== fileId);
-        }
-    });
-    
-    updateFileList();
-    saveToLocalStorage();
-    showNotification('文件已删除', 'info');
-}
+    document.head.appendChild(style);
+});
