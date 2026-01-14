@@ -48,7 +48,7 @@ class ResearchProgressSystem {
         const membersData = [
             { name: '黄启豪', research: '计算机视觉', status: 'active' },
             { name: '丘文安', research: '计算机视觉', status: 'active' },
-            { name: '陈浩南', research: '计算机视觉', status: 'warning' },
+            { name: '陈浩南', research: '计算机视觉', status: 'active' },
             { name: '李崇标', research: '计算机视觉', status: 'active' },
             { name: '马蕴哲', research: '计算机视觉', status: 'active' },
         ];
@@ -943,4 +943,5 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
     document.head.appendChild(style);
 });
+
 
