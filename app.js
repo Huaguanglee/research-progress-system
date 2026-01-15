@@ -1,4 +1,4 @@
-// 3DCV学术科研进展管理系统
+// 应用状态管理
 class ResearchProgressSystem {
     constructor() {
         this.members = [];
@@ -11,7 +11,6 @@ class ResearchProgressSystem {
     }
 
     init() {
-        console.log('初始化3DCV科研进展管理系统...');
         this.initializeMonths();
         this.initializeMembers();
         this.renderUI();
@@ -19,11 +18,11 @@ class ResearchProgressSystem {
         this.loadFromStorage();
         this.startAutoSave();
         
-        this.showNotification('3DCV科研进展管理系统初始化完成！', 'success');
+        this.showNotification('系统初始化完成！', 'success');
     }
 
     initializeMonths() {
-        const startDate = new Date(2025, 0, 1);
+        const startDate = new Date(2025, 0, 1); // 2025年1月开始
         this.months = [];
         
         for (let i = 0; i < 12; i++) {
@@ -40,70 +39,30 @@ class ResearchProgressSystem {
             });
         }
         
+        // 设置当前月份为第一个月
         this.currentMonth = this.months[0]?.id || null;
     }
 
     initializeMembers() {
-        // 3DCV领域的8个团队成员
+        // 8个团队成员
         const membersData = [
-            { 
-                name: '张三', 
-                research: '三维重建与SLAM',
-                status: 'active',
-                description: '专注于实时三维重建和同步定位与建图技术'
-            },
-            { 
-                name: '李四', 
-                research: '点云处理与分析',
-                status: 'active',
-                description: '研究点云配准、分割和特征提取算法'
-            },
-            { 
-                name: '王五', 
-                research: '三维目标检测',
-                status: 'warning',
-                description: '基于深度学习的3D目标检测算法研究'
-            },
-            { 
-                name: '赵六', 
-                research: '神经辐射场(NeRF)',
-                status: 'active',
-                description: '神经渲染和新视角合成技术'
-            },
-            { 
-                name: '刘七', 
-                research: '三维语义分割',
-                status: 'active',
-                description: '点云和体素的语义理解与分割'
-            },
-            { 
-                name: '陈八', 
-                research: '三维姿态估计',
-                status: 'danger',
-                description: '人体和物体的三维姿态估计与跟踪'
-            },
-            { 
-                name: '杨九', 
-                research: '三维生成模型',
-                status: 'active',
-                description: '基于扩散模型的三维内容生成'
-            },
-            { 
-                name: '吴十', 
-                research: '多视角几何',
-                status: 'active',
-                description: '多视角三维重建与优化算法'
-            }
+            { name: '张三', research: '机器学习与数据挖掘', status: 'active' },
+            { name: '李四', research: '自然语言处理', status: 'active' },
+            { name: '王五', research: '计算机视觉', status: 'warning' },
+            { name: '赵六', research: '人工智能理论', status: 'active' },
+            { name: '刘七', research: '知识图谱与推理', status: 'active' },
+            { name: '陈八', research: '智能系统', status: 'danger' },
+            { name: '杨九', research: '人机交互', status: 'active' },
+            { name: '吴十', research: '强化学习', status: 'active' }
         ];
 
         this.members = membersData.map((member, index) => {
-            const memberId = `3DCV${String(index + 1).padStart(3, '0')}`;
+            const memberId = `RES${String(index + 1).padStart(3, '0')}`;
             return {
                 id: memberId,
                 name: member.name,
                 avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name)}&background=667eea&color=fff&size=128`,
                 research: member.research,
-                description: member.description,
                 status: member.status,
                 progress: Math.floor(Math.random() * 100),
                 files: [],
@@ -174,7 +133,7 @@ class ResearchProgressSystem {
                     </div>
                     <div class="progress-text">
                         ${monthlyData.content ? 
-                            this.stripHtml(monthlyData.content).substring(0, 60) + '...' : 
+                            monthlyData.content.replace(/<[^>]*>/g, '').substring(0, 60) + '...' : 
                             '暂无进展记录'}
                     </div>
                 </div>
@@ -193,11 +152,11 @@ class ResearchProgressSystem {
 
         // 添加事件监听器
         grid.querySelectorAll('.view-details').forEach(btn => {
-            btn.addEventListener('click', (e) => this.showMemberDetails(e.target.closest('button').dataset.member));
+            btn.addEventListener('click', (e) => this.showMemberDetails(e.target.dataset.member));
         });
 
         grid.querySelectorAll('.edit-progress').forEach(btn => {
-            btn.addEventListener('click', (e) => this.editMemberProgress(e.target.closest('button').dataset.member));
+            btn.addEventListener('click', (e) => this.editMemberProgress(e.target.dataset.member));
         });
     }
 
@@ -242,6 +201,7 @@ class ResearchProgressSystem {
     selectMonth(monthId) {
         this.currentMonth = monthId;
         
+        // 更新按钮状态
         document.querySelectorAll('.month-btn').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.month === monthId);
         });
@@ -253,7 +213,6 @@ class ResearchProgressSystem {
         if (!this.currentMember || !this.currentMonth) {
             document.getElementById('progressEditor').innerHTML = 
                 '<p>请先选择成员和月份...</p>';
-            this.updateFileList();
             return;
         }
 
@@ -265,15 +224,8 @@ class ResearchProgressSystem {
 
         const monthlyData = member.monthlyData[this.currentMonth];
         editor.innerHTML = monthlyData?.content || 
-            `<h3>${this.getMonthName(this.currentMonth)}科研进展</h3>
-             <p>请在此记录本月科研工作：</p>
-             <ul>
-                <li>实验进展与结果</li>
-                <li>数据分析与发现</li>
-                <li>论文撰写进度</li>
-                <li>遇到的问题与解决方案</li>
-                <li>下月工作计划</li>
-             </ul>`;
+            `<p>请在此编辑${this.getMonthName(this.currentMonth)}的科研进展...</p>
+             <p>包括：实验进展、数据分析、论文撰写、问题与解决方案、下月计划等。</p>`;
 
         this.updateFileList();
         this.updateCharCount();
@@ -309,10 +261,10 @@ class ResearchProgressSystem {
                     </div>
                 </div>
                 <div class="file-actions">
-                    <button class="btn-icon download-file" title="下载" data-file="${file.id}">
+                    <button class="btn-icon download-file" title="下载">
                         <i class="fas fa-download"></i>
                     </button>
-                    <button class="btn-icon delete-file" title="删除" data-file="${file.id}">
+                    <button class="btn-icon delete-file" title="删除">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -322,15 +274,9 @@ class ResearchProgressSystem {
         // 添加事件监听器
         container.querySelectorAll('.delete-file').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                const fileId = e.target.closest('button').dataset.file;
+                const fileItem = e.target.closest('.file-item');
+                const fileId = fileItem.dataset.file;
                 this.deleteFile(fileId);
-            });
-        });
-
-        container.querySelectorAll('.download-file').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const fileId = e.target.closest('button').dataset.file;
-                this.downloadFile(fileId);
             });
         });
     }
@@ -349,16 +295,9 @@ class ResearchProgressSystem {
             'jpeg': 'image',
             'png': 'image',
             'zip': 'archive',
-            'rar': 'archive',
-            'py': 'code',
-            'ipynb': 'code',
-            'cpp': 'code',
-            'h': 'code',
-            'obj': 'cube',
-            'ply': 'cube',
-            'pcd': 'cube'
+            'rar': 'archive'
         };
-        return icons[fileType.toLowerCase()] || 'file';
+        return icons[fileType] || 'file';
     }
 
     getMonthName(monthId) {
@@ -369,12 +308,10 @@ class ResearchProgressSystem {
     setupEventListeners() {
         // 编辑器工具栏
         document.querySelectorAll('.tool-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
+            btn.addEventListener('click', () => {
                 const command = btn.dataset.command;
                 const value = btn.dataset.value;
                 document.execCommand(command, false, value);
-                document.getElementById('progressEditor').focus();
             });
         });
 
@@ -446,9 +383,9 @@ class ResearchProgressSystem {
             item.addEventListener('click', (e) => {
                 e.preventDefault();
                 document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-                e.currentTarget.classList.add('active');
+                e.target.classList.add('active');
                 
-                const page = e.currentTarget.dataset.page;
+                const page = e.target.dataset.page;
                 this.showPage(page);
             });
         });
@@ -465,7 +402,7 @@ class ResearchProgressSystem {
         const charCount = document.getElementById('charCount');
         if (!editor || !charCount) return;
 
-        const text = this.stripHtml(editor.innerHTML);
+        const text = editor.innerText.replace(/\s+/g, ' ').trim();
         const charLength = text.length;
         charCount.textContent = `${charLength} 字`;
     }
@@ -481,7 +418,7 @@ class ResearchProgressSystem {
         if (!member) return;
 
         for (const file of files) {
-            if (file.size > 50 * 1024 * 1024) {
+            if (file.size > 50 * 1024 * 1024) { // 50MB
                 this.showNotification(`文件 ${file.name} 超过50MB限制！`, 'error');
                 continue;
             }
@@ -492,7 +429,7 @@ class ResearchProgressSystem {
                 size: this.formatFileSize(file.size),
                 type: file.name.split('.').pop().toLowerCase(),
                 uploadDate: new Date().toISOString(),
-                fileObject: file
+                data: await this.readFileAsBase64(file)
             };
 
             if (!member.monthlyData[this.currentMonth]) {
@@ -514,6 +451,15 @@ class ResearchProgressSystem {
         this.updateStats();
     }
 
+    readFileAsBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+
     formatFileSize(bytes) {
         if (bytes === 0) return '0 Bytes';
         const k = 1024;
@@ -523,7 +469,6 @@ class ResearchProgressSystem {
     }
 
     deleteFile(fileId) {
-        if (!confirm('确定要删除这个文件吗？')) return;
         if (!this.currentMember) return;
 
         const member = this.members.find(m => m.id === this.currentMember);
@@ -544,28 +489,6 @@ class ResearchProgressSystem {
         this.showNotification('文件已删除', 'info');
     }
 
-    downloadFile(fileId) {
-        if (!this.currentMember) return;
-
-        const member = this.members.find(m => m.id === this.currentMember);
-        if (!member) return;
-
-        const file = member.files.find(f => f.id === fileId);
-        if (!file || !file.fileObject) {
-            this.showNotification('文件不存在或无法下载！', 'error');
-            return;
-        }
-
-        const url = URL.createObjectURL(file.fileObject);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = file.name;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    }
-
     saveProgress() {
         if (!this.currentMember || !this.currentMonth) {
             this.showNotification('请先选择成员和月份！', 'warning');
@@ -576,7 +499,7 @@ class ResearchProgressSystem {
         if (!editor) return;
 
         const content = editor.innerHTML.trim();
-        if (!content || content === '<p><br></p>' || content === '<p></p>') {
+        if (!content || content === '<p><br></p>') {
             this.showNotification('请输入进展内容！', 'warning');
             return;
         }
@@ -653,13 +576,12 @@ class ResearchProgressSystem {
     exportData() {
         const exportData = {
             exportDate: new Date().toISOString(),
-            system: '3DCV学术科研进展管理系统',
+            system: '学术科研进展管理系统',
             version: '1.0.0',
             data: this.members.map(member => ({
                 id: member.id,
                 name: member.name,
                 research: member.research,
-                description: member.description,
                 progress: member.progress,
                 lastUpdate: member.lastUpdate,
                 monthlyData: member.monthlyData,
@@ -678,7 +600,7 @@ class ResearchProgressSystem {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `3DCV科研进展报告_${new Date().toISOString().split('T')[0]}.json`;
+        a.download = `科研进展报告_${new Date().toISOString().split('T')[0]}.json`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -699,15 +621,10 @@ class ResearchProgressSystem {
             m.monthlyData[currentMonth]?.submitted
         ).length;
 
-        const totalMembersEl = document.getElementById('totalMembers');
-        const totalProgressEl = document.getElementById('totalProgress');
-        const totalFilesEl = document.getElementById('totalFiles');
-        const monthSubmissionsEl = document.getElementById('monthSubmissions');
-
-        if (totalMembersEl) totalMembersEl.textContent = totalMembers;
-        if (totalProgressEl) totalProgressEl.textContent = totalProgress + '%';
-        if (totalFilesEl) totalFilesEl.textContent = totalFiles;
-        if (monthSubmissionsEl) monthSubmissionsEl.textContent = monthSubmissions;
+        document.getElementById('totalMembers').textContent = totalMembers;
+        document.getElementById('totalProgress').textContent = totalProgress + '%';
+        document.getElementById('totalFiles').textContent = totalFiles;
+        document.getElementById('monthSubmissions').textContent = monthSubmissions;
     }
 
     updateTimeline(action, data) {
@@ -755,6 +672,8 @@ class ResearchProgressSystem {
     renderTimeline() {
         const timeline = document.getElementById('timeline');
         if (!timeline) return;
+
+        // 这里可以添加从存储中加载时间轴记录的逻辑
     }
 
     showMemberDetails(memberId) {
@@ -779,8 +698,8 @@ class ResearchProgressSystem {
         modalAvatar.src = member.avatar;
         modalAvatar.alt = member.name;
         modalName.textContent = member.name;
-        modalId.textContent = `ID: ${member.id}`;
-        modalResearch.textContent = `${member.research} - ${member.description}`;
+        modalId.textContent = `学号/工号: ${member.id}`;
+        modalResearch.textContent = `研究方向: ${member.research}`;
 
         // 更新统计数据
         const completedMonths = Object.keys(member.monthlyData).filter(
@@ -845,13 +764,6 @@ class ResearchProgressSystem {
         }
         
         this.loadMemberProgress();
-        
-        // 滚动到编辑器
-        const editorSection = document.querySelector('.editor-section');
-        if (editorSection) {
-            editorSection.scrollIntoView({ behavior: 'smooth' });
-        }
-        
         this.showNotification(`正在编辑 ${this.members.find(m => m.id === memberId)?.name} 的进展`, 'info');
     }
 
@@ -871,16 +783,14 @@ class ResearchProgressSystem {
 
     showNotification(message, type = 'info') {
         if (typeof Toastify !== 'undefined') {
-            const backgroundColor = type === 'success' ? "#27ae60" : 
-                                 type === 'error' ? "#e74c3c" : 
-                                 type === 'warning' ? "#f39c12" : "#3498db";
-            
             Toastify({
                 text: message,
                 duration: 3000,
                 gravity: "top",
                 position: "right",
-                backgroundColor: backgroundColor,
+                backgroundColor: type === 'success' ? "#27ae60" : 
+                              type === 'error' ? "#e74c3c" : 
+                              type === 'warning' ? "#f39c12" : "#3498db",
                 stopOnFocus: true
             }).showToast();
         } else {
@@ -942,31 +852,24 @@ class ResearchProgressSystem {
     startAutoSave() {
         // 每30秒自动保存一次
         this.autoSaveInterval = setInterval(() => {
-            if (this.currentMember && this.currentMonth) {
-                this.saveProgress();
-            }
+            this.saveProgress();
         }, 30000);
-    }
-
-    stripHtml(html) {
-        const tmp = document.createElement('div');
-        tmp.innerHTML = html;
-        return tmp.textContent || tmp.innerText || '';
     }
 }
 
 // 初始化应用
+let app;
+
 document.addEventListener('DOMContentLoaded', () => {
-    const app = new ResearchProgressSystem();
+    app = new ResearchProgressSystem();
     
-    // 添加额外的CSS样式
+    // 添加一些CSS样式
     const style = document.createElement('style');
     style.textContent = `
         .toastify {
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             font-family: 'Roboto', 'Noto Serif SC', sans-serif;
-            font-size: 14px;
         }
         
         .month-detail {
@@ -987,15 +890,11 @@ document.addEventListener('DOMContentLoaded', () => {
         .month-header h4 {
             color: #2c3e50;
             margin: 0;
-            font-size: 1.1rem;
         }
         
         .detail-date {
             color: #7f8c8d;
             font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
         }
         
         .month-content {
@@ -1004,27 +903,11 @@ document.addEventListener('DOMContentLoaded', () => {
             margin-bottom: 10px;
         }
         
-        .month-content ul, .month-content ol {
-            padding-left: 20px;
-            margin: 10px 0;
-        }
-        
-        .month-content li {
-            margin: 5px 0;
-        }
-        
         .month-files {
             background: white;
             border-radius: 6px;
             padding: 10px;
             font-size: 0.9rem;
-            margin-top: 10px;
-        }
-        
-        .month-files strong {
-            display: block;
-            margin-bottom: 5px;
-            color: #2c3e50;
         }
         
         .month-files ul {
@@ -1034,7 +917,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         .month-files li {
             margin: 3px 0;
-            color: #666;
         }
         
         .status-submitted {
@@ -1043,6 +925,7 @@ document.addEventListener('DOMContentLoaded', () => {
             padding: 2px 8px;
             border-radius: 10px;
             font-size: 0.8rem;
+            margin-left: 10px;
         }
         
         .status-draft {
@@ -1051,6 +934,7 @@ document.addEventListener('DOMContentLoaded', () => {
             padding: 2px 8px;
             border-radius: 10px;
             font-size: 0.8rem;
+            margin-left: 10px;
         }
         
         .no-data {
@@ -1058,16 +942,6 @@ document.addEventListener('DOMContentLoaded', () => {
             color: #7f8c8d;
             font-style: italic;
             padding: 20px;
-        }
-        
-        .research-tag {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            display: inline-block;
         }
     `;
     document.head.appendChild(style);
